@@ -295,9 +295,10 @@ const SceneView = ({
           fullScreenSwipeShadowEnabled={fullScreenGestureShadowEnabled}
           freezeOnBlur={freezeOnBlur}
           gestureEnabled={
-            Platform.OS === 'android'
+            Platform.OS === 'android' && presentation !== 'formSheet'
               ? // This prop enables handling of system back gestures on Android
-                // Since we handle them in JS side, we disable this
+                // Since we handle them in JS side, we disable this.
+                // Excluding `formSheet` to be consistent with IOS.
                 false
               : gestureEnabled
           }
