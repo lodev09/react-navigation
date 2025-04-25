@@ -128,7 +128,7 @@ const SceneView = ({
     sheetElevation = 24,
     sheetExpandsWhenScrolledToEdge = true,
     sheetInitialDetentIndex = 0,
-    sheetDismissible = true,
+    sheetDismissible,
     statusBarAnimation,
     statusBarHidden,
     statusBarStyle,
