@@ -128,6 +128,7 @@ const SceneView = ({
     sheetElevation = 24,
     sheetExpandsWhenScrolledToEdge = true,
     sheetInitialDetentIndex = 0,
+    sheetDismissible = true,
     statusBarAnimation,
     statusBarHidden,
     statusBarStyle,
@@ -295,10 +296,9 @@ const SceneView = ({
           fullScreenSwipeShadowEnabled={fullScreenGestureShadowEnabled}
           freezeOnBlur={freezeOnBlur}
           gestureEnabled={
-            Platform.OS === 'android' && presentation !== 'formSheet'
+            Platform.OS === 'android'
               ? // This prop enables handling of system back gestures on Android
                 // Since we handle them in JS side, we disable this.
-                // Excluding `formSheet` to be consistent with IOS.
                 false
               : gestureEnabled
           }
@@ -318,6 +318,7 @@ const SceneView = ({
           sheetCornerRadius={sheetCornerRadius}
           sheetElevation={sheetElevation}
           sheetExpandsWhenScrolledToEdge={sheetExpandsWhenScrolledToEdge}
+          sheetDismissible={sheetDismissible}
           statusBarAnimation={statusBarAnimation}
           statusBarHidden={statusBarHidden}
           statusBarStyle={statusBarStyle}
