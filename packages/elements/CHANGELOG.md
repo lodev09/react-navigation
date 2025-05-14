@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.2](https://github.com/react-navigation/react-navigation/compare/@react-navigation/elements@2.4.1...@react-navigation/elements@2.4.2) (2025-05-11)
+
+**Note:** Version bump only for package @react-navigation/elements
+
+## [2.4.1](https://github.com/react-navigation/react-navigation/compare/@react-navigation/elements@2.4.0...@react-navigation/elements@2.4.1) (2025-05-04)
+
+### Bug Fixes
+
+* fix peer dep versions. closes [#12580](https://github.com/react-navigation/react-navigation/issues/12580) ([6fc3dd6](https://github.com/react-navigation/react-navigation/commit/6fc3dd677aecdcf8696fe723e17b9c028de7ad85)) - by @satya164
+
+# [2.4.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/elements@2.3.8...@react-navigation/elements@2.4.0) (2025-05-02)
+
+### Bug Fixes
+
+* use aria props instead of accessibilityX ([#11848](https://github.com/react-navigation/react-navigation/issues/11848)) ([347ca97](https://github.com/react-navigation/react-navigation/commit/347ca975406e84a5e7452679b1dde7b9ecca1a22)) - by @satya164
+
+### Features
+
+* **elements:** add forwardRef to HeaderButton and PlatformPressable components ([#12554](https://github.com/react-navigation/react-navigation/issues/12554)) ([04a82f1](https://github.com/react-navigation/react-navigation/commit/04a82f1a34ebc265c2dac3ebae94170efc3d837a)) - by @erickreutz
+
 ## [2.3.8](https://github.com/react-navigation/react-navigation/compare/@react-navigation/elements@2.3.7...@react-navigation/elements@2.3.8) (2025-04-08)
 
 ### Bug Fixes
