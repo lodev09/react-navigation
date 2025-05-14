@@ -297,7 +297,7 @@ const SceneView = ({
           gestureEnabled={
             Platform.OS === 'android'
               ? // This prop enables handling of system back gestures on Android
-                // Since we handle them in JS side, we disable this.
+                // Since we handle them in JS side, we disable this
                 false
               : gestureEnabled
           }
