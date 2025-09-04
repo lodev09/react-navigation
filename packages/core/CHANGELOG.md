@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.12.2](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.12.1...@react-navigation/core@7.12.2) (2025-07-25)
+
+### Bug Fixes
+
+* don't generate empty path if initial route already has a path ([4306ddd](https://github.com/react-navigation/react-navigation/commit/4306ddd754f1b554d9d8bed6056db528f9e2329b)) - by @satya164
+
+## [7.12.1](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.12.0...@react-navigation/core@7.12.1) (2025-06-21)
+
+### Bug Fixes
+
+* fix error message for useNavigationState ([8740ae0](https://github.com/react-navigation/react-navigation/commit/8740ae0f495a2e55dd05ce3e4da6f35cc13a1e1f)) - by @satya164
+
+# [7.12.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.11.0...@react-navigation/core@7.12.0) (2025-06-19)
+
+### Bug Fixes
+
+* remove .native extension in core for ESM compat ([93e5a83](https://github.com/react-navigation/react-navigation/commit/93e5a83319fb0f41485f9f86c5cb46af5057235f)) - by @
+
+### Features
+
+* make useNavigationState work in navigator level, e.g. layouts ([ba6be7d](https://github.com/react-navigation/react-navigation/commit/ba6be7d73a9805df29b7e00559caa292ccca6532)) - by @
+
+# [7.11.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.10.1...@react-navigation/core@7.11.0) (2025-06-18)
+
+### Features
+
+* support merging params when navigating to nested navigator ([7754c15](https://github.com/react-navigation/react-navigation/commit/7754c153122ccfaff353da36efaa2a78d92cc1e5)) - by @satya164
+
+## [7.10.1](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.10.0...@react-navigation/core@7.10.1) (2025-06-14)
+
+### Bug Fixes
+
+* remove non-existed method from navigation type ([8d2b1ec](https://github.com/react-navigation/react-navigation/commit/8d2b1ec3b56f6769c8bb0cba4d14b1802337ded8)) - by @satya164
+
+# [7.10.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.9.2...@react-navigation/core@7.10.0) (2025-05-30)
+
+### Features
+
+* add a REPLACE_PARAMS action ([9739421](https://github.com/react-navigation/react-navigation/commit/97394212d88ccfc464db850b8a95d129befa5c80)) - by @satya164
+
 ## [7.9.2](https://github.com/react-navigation/react-navigation/compare/@react-navigation/core@7.9.1...@react-navigation/core@7.9.2) (2025-05-11)
 
 ### Bug Fixes

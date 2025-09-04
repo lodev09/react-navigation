@@ -1,9 +1,11 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
-import Color from 'color';
 import * as React from 'react';
 import {
   Animated,
+  BackHandler,
+  type ColorValue,
   Image,
+  type NativeEventSubscription,
   Platform,
   type StyleProp,
   StyleSheet,
@@ -15,16 +17,20 @@ import {
 import clearIcon from '../assets/clear-icon.png';
 import closeIcon from '../assets/close-icon.png';
 import searchIcon from '../assets/search-icon.png';
+import { Color } from '../Color';
 import { PlatformPressable } from '../PlatformPressable';
 import { Text } from '../Text';
 import type { HeaderSearchBarOptions, HeaderSearchBarRef } from '../types';
+import { HeaderBackButton } from './HeaderBackButton';
 import { HeaderButton } from './HeaderButton';
 import { HeaderIcon } from './HeaderIcon';
 
 type Props = Omit<HeaderSearchBarOptions, 'ref'> & {
   visible: boolean;
   onClose: () => void;
-  tintColor?: string;
+  tintColor?: ColorValue;
+  pressColor?: ColorValue;
+  pressOpacity?: number;
   style?: Animated.WithAnimatedValue<StyleProp<ViewStyle>>;
 };
 
@@ -48,6 +54,8 @@ function HeaderSearchBarInternal(
     onChangeText,
     onClose,
     tintColor,
+    pressColor,
+    pressOpacity,
     style,
     ...rest
   }: Props,
@@ -120,14 +128,52 @@ function HeaderSearchBarInternal(
   }, [clearText, onChangeText]);
 
   const cancelSearch = React.useCallback(() => {
-    onClear();
+    // FIXME: figure out how to create a SyntheticEvent
+    // @ts-expect-error: we don't have the native event here
+    onChangeText?.({ nativeEvent: { text: '' } });
     onClose();
-  }, [onClear, onClose]);
+    setValue('');
+  }, [onChangeText, onClose]);
 
-  React.useEffect(
-    () => navigation?.addListener('blur', cancelSearch),
-    [cancelSearch, navigation]
-  );
+  React.useEffect(() => {
+    const cancelIfVisible = () => {
+      if (visibleValueRef.current) {
+        cancelSearch();
+
+        return true;
+      }
+
+      return false;
+    };
+
+    const unsubscribeBlur = navigation?.addListener('blur', cancelIfVisible);
+
+    const onKeyup = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        cancelIfVisible();
+      }
+    };
+
+    let backHandlerSubscription: NativeEventSubscription | undefined;
+
+    if (Platform.OS === 'web') {
+      document?.body?.addEventListener?.('keyup', onKeyup);
+    } else {
+      backHandlerSubscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        cancelIfVisible
+      );
+    }
+
+    return () => {
+      unsubscribeBlur();
+      backHandlerSubscription?.remove();
+
+      if (Platform.OS === 'web') {
+        document?.body?.removeEventListener?.('keyup', onKeyup);
+      }
+    };
+  }, [cancelSearch, navigation]);
 
   React.useImperativeHandle(
     ref,
@@ -156,11 +202,25 @@ function HeaderSearchBarInternal(
 
   return (
     <Animated.View
-      pointerEvents={visible ? 'auto' : 'none'}
       aria-live="polite"
       aria-hidden={!visible}
-      style={[styles.container, { opacity: visibleAnim }, style]}
+      style={[
+        styles.container,
+        {
+          pointerEvents: visible ? 'auto' : 'none',
+          opacity: visibleAnim,
+        },
+        style,
+      ]}
     >
+      {Platform.OS !== 'ios' ? (
+        <HeaderBackButton
+          tintColor={tintColor ?? colors.text}
+          pressColor={pressColor}
+          pressOpacity={pressOpacity}
+          onPress={cancelSearch}
+        />
+      ) : null}
       <View style={styles.searchbarContainer}>
         <HeaderIcon
           source={searchIcon}
@@ -176,10 +236,10 @@ function HeaderSearchBarInternal(
           inputMode={INPUT_TYPE_TO_MODE[inputType ?? 'text']}
           enterKeyHint={enterKeyHint}
           placeholder={placeholder}
-          placeholderTextColor={Color(textColor).alpha(0.5).string()}
+          placeholderTextColor={Color(textColor)?.alpha(0.5).string()}
           cursorColor={colors.primary}
           selectionHandleColor={colors.primary}
-          selectionColor={Color(colors.primary).alpha(0.3).string()}
+          selectionColor={Color(colors.primary)?.alpha(0.3).string()}
           style={[
             fonts.regular,
             styles.searchbar,
@@ -189,7 +249,10 @@ function HeaderSearchBarInternal(
                 default: 'transparent',
               }),
               color: textColor,
-              borderBottomColor: Color(textColor).alpha(0.2).string(),
+              borderBottomColor:
+                (Color(textColor)?.alpha(0.2).string() ?? dark)
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : 'rgba(0, 0, 0, 0.2)',
             },
           ]}
         />
@@ -215,14 +278,8 @@ function HeaderSearchBarInternal(
       </View>
       {Platform.OS !== 'ios' ? (
         <HeaderButton
-          onPress={() => {
-            if (value) {
-              onClear();
-            } else {
-              onClose();
-            }
-          }}
-          style={styles.closeButton}
+          onPress={onClear}
+          style={[styles.closeButton, { opacity: clearVisibleAnim }]}
         >
           <HeaderIcon source={closeIcon} tintColor={textColor} />
         </HeaderButton>

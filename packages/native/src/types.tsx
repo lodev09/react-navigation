@@ -5,6 +5,7 @@ import type {
   PathConfigMap,
   Route,
 } from '@react-navigation/core';
+import type { ColorValue as ReactNativeColorValue } from 'react-native';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -12,6 +13,17 @@ declare global {
     interface Theme extends NativeTheme {}
   }
 }
+
+type ColorValue =
+  | `#${string}`
+  | `rgb(${string})`
+  | `rgba(${string})`
+  | `hsl(${string})`
+  | `hsla(${string})`
+  | `hwb(${string})`
+  | `hwba(${string})`
+  | `var(--${string})`
+  | ReactNativeColorValue;
 
 type FontStyle = {
   fontFamily: string;
@@ -32,12 +44,12 @@ type FontStyle = {
 interface NativeTheme {
   dark: boolean;
   colors: {
-    primary: string;
-    background: string;
-    card: string;
-    text: string;
-    border: string;
-    notification: string;
+    primary: ColorValue;
+    background: ColorValue;
+    card: ColorValue;
+    text: ColorValue;
+    border: ColorValue;
+    notification: ColorValue;
   };
   fonts: {
     regular: FontStyle;
@@ -51,15 +63,28 @@ export type Theme = NativeTheme;
 
 export type LocaleDirection = 'ltr' | 'rtl';
 
+export type LinkingPrefix = '*' | (string & {});
+
 export type LinkingOptions<ParamList extends {}> = {
   /**
    * Whether deep link handling should be enabled.
-   * Defaults to true.
+   *
+   * Defaults to `true` when a linking config is specified.
    */
   enabled?: boolean;
   /**
-   * The prefixes are stripped from the URL before parsing them.
-   * Usually they are the `scheme` + `host` (e.g. `myapp://chat?user=jane`)
+   * The prefixes to match to determine whether to handle a URL.
+   *
+   * Supported prefix formats:
+   * - `${scheme}://` - App-specific scheme, e.g. `myapp://`
+   * - `${protocol}://${host}` - Universal links or app links, e.g. `https://example.com`, `https://subdomain.example.com`
+   * - `${protocol}://*.${domain}` - Any subdomain of given domain, e.g. `https://*.example.com`
+   * - `${protocol}://${host}/${path}` - Subpath of given host, e.g. `https://example.com/app`
+   * - `*` - Any domain or subdomain with `http://` and `https://` as well as any app-specific scheme
+   *
+   * The prefix will be stripped from the URL before it's parsed.
+   *
+   * Defaults to `[*]`.
    *
    * This is not supported on Web.
    *
@@ -67,14 +92,14 @@ export type LinkingOptions<ParamList extends {}> = {
    * ```js
    * {
    *    prefixes: [
-   *      "myapp://", // App-specific scheme
-   *      "https://example.com", // Prefix for universal links
-   *      "https://*.example.com" // Prefix which matches any subdomain
+   *      "myapp://",
+   *      "https://example.com",
+   *      "https://*.example.com"
    *    ]
    * }
    * ```
    */
-  prefixes: string[];
+  prefixes?: LinkingPrefix[];
   /**
    * Optional function which takes an incoming URL returns a boolean
    * indicating whether React Navigation should handle it.
@@ -153,9 +178,11 @@ export type LinkingOptions<ParamList extends {}> = {
    *    subscribe: (listener) => {
    *      const onReceiveURL = ({ url }) => listener(url);
    *
-   *      Linking.addEventListener('url', onReceiveURL);
+   *      const subscription = Linking.addEventListener('url', onReceiveURL);
    *
-   *      return () => Linking.removeEventListener('url', onReceiveURL);
+   *      return () => {
+   *        subscription.remove();
+   *      };
    *   }
    * }
    * ```

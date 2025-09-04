@@ -38,10 +38,10 @@ import { type ScreenConfigWithParent, useDescriptors } from './useDescriptors';
 import { useEventEmitter } from './useEventEmitter';
 import { useFocusedListenersChildrenAdapter } from './useFocusedListenersChildrenAdapter';
 import { useFocusEvents } from './useFocusEvents';
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
 import { useKeyedChildListeners } from './useKeyedChildListeners';
 import { useLazyValue } from './useLazyValue';
 import { useNavigationHelpers } from './useNavigationHelpers';
+import { NavigationStateListenerProvider } from './useNavigationState';
 import { useOnAction } from './useOnAction';
 import { useOnGetState } from './useOnGetState';
 import { useOnRouteFocus } from './useOnRouteFocus';
@@ -309,7 +309,7 @@ export function useNavigationBuilder<
     screenOptions,
     screenLayout,
     screenListeners,
-    UNSTABLE_router,
+    router: routerOverrides,
     ...rest
   } = options;
 
@@ -333,8 +333,8 @@ export function useNavigationBuilder<
 
     const original = createRouter(rest as unknown as RouterOptions);
 
-    if (UNSTABLE_router != null) {
-      const overrides = UNSTABLE_router(original);
+    if (routerOverrides != null) {
+      const overrides = routerOverrides(original);
 
       return {
         ...original,
@@ -573,6 +573,7 @@ export function useNavigationBuilder<
         name: route.params.screen,
         params: route.params.params,
         path: route.params.path,
+        merge: route.params.merge,
         pop: route.params.pop,
       });
     }
@@ -643,7 +644,7 @@ export function useNavigationBuilder<
 
   stateRef.current = state;
 
-  useIsomorphicLayoutEffect(() => {
+  React.useLayoutEffect(() => {
     stateRef.current = null;
   });
 
@@ -807,7 +808,9 @@ export function useNavigationBuilder<
 
     return (
       <NavigationHelpersContext.Provider value={navigation}>
-        <PreventRemoveProvider>{element}</PreventRemoveProvider>
+        <NavigationStateListenerProvider state={state}>
+          <PreventRemoveProvider>{element}</PreventRemoveProvider>
+        </NavigationStateListenerProvider>
       </NavigationHelpersContext.Provider>
     );
   });

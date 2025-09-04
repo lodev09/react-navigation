@@ -16,8 +16,11 @@ export function Overlay({
   ...rest
 }: OverlayProps) {
   const animatedStyle = useAnimatedStyle(() => {
+    const active = progress.value > PROGRESS_EPSILON;
+
     return {
       opacity: progress.value,
+      pointerEvents: active ? 'auto' : 'none',
     };
   }, [progress]);
 
@@ -25,7 +28,6 @@ export function Overlay({
     const active = progress.value > PROGRESS_EPSILON;
 
     return {
-      'pointerEvents': active ? 'auto' : 'none',
       'aria-hidden': !active,
     } as const;
   }, [progress]);
@@ -33,7 +35,7 @@ export function Overlay({
   return (
     <Animated.View
       {...rest}
-      style={[styles.overlay, animatedStyle, style]}
+      style={[StyleSheet.absoluteFill, styles.overlay, animatedStyle, style]}
       animatedProps={animatedProps}
     >
       <Pressable
@@ -41,6 +43,7 @@ export function Overlay({
         style={styles.pressable}
         role="button"
         aria-label={accessibilityLabel}
+        accessible
       />
     </Animated.View>
   );
@@ -48,7 +51,6 @@ export function Overlay({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   pressable: {

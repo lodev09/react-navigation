@@ -2,6 +2,7 @@ import { useTheme } from '@react-navigation/native';
 import * as React from 'react';
 import {
   Animated,
+  type ColorValue,
   Easing,
   type GestureResponderEvent,
   Platform,
@@ -19,7 +20,7 @@ type HoverEffectProps = {
 
 export type Props = Omit<PressableProps, 'style' | 'onPress'> & {
   href?: string;
-  pressColor?: string;
+  pressColor?: ColorValue;
   pressOpacity?: number;
   hoverEffect?: HoverEffectProps;
   style?: Animated.WithAnimatedValue<StyleProp<ViewStyle>>;
@@ -120,10 +121,10 @@ function PlatformPressableInternal(
       accessible
       role={Platform.OS === 'web' && rest.href != null ? 'link' : 'button'}
       onPress={disabled ? undefined : handlePress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      onPressIn={disabled ? undefined : handlePressIn}
+      onPressOut={disabled ? undefined : handlePressOut}
       android_ripple={
-        ANDROID_SUPPORTS_RIPPLE
+        ANDROID_SUPPORTS_RIPPLE && !disabled
           ? {
               color:
                 pressColor !== undefined
@@ -138,18 +139,18 @@ function PlatformPressableInternal(
       style={[
         {
           cursor:
-            Platform.OS === 'web' || Platform.OS === 'ios'
+            (Platform.OS === 'web' || Platform.OS === 'ios') && !disabled
               ? // Pointer cursor on web
                 // Hover effect on iPad and visionOS
                 'pointer'
               : 'auto',
-          opacity: !ANDROID_SUPPORTS_RIPPLE ? opacity : 1,
+          opacity: !ANDROID_SUPPORTS_RIPPLE && !disabled ? opacity : 1,
         },
         style,
       ]}
       {...rest}
     >
-      <HoverEffect {...hoverEffect} />
+      {!disabled ? <HoverEffect {...hoverEffect} /> : null}
       {children}
     </AnimatedPressable>
   );
@@ -174,6 +175,7 @@ const CSS_TEXT = css`
     background-color: var(--overlay-color);
     opacity: 0;
     transition: opacity 0.15s;
+    pointer-events: none;
   }
 
   a:hover > .${CLASS_NAME}, button:hover > .${CLASS_NAME} {

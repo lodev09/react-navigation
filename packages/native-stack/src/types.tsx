@@ -12,6 +12,7 @@ import type {
   Theme,
 } from '@react-navigation/native';
 import type {
+  ColorValue,
   ImageSourcePropType,
   StyleProp,
   TextStyle,
@@ -118,7 +119,7 @@ export type NativeStackHeaderRightProps = {
   /**
    * Tint color for the header.
    */
-  tintColor?: string;
+  tintColor?: ColorValue;
   /**
    * Whether it's possible to navigate back in stack.
    */
@@ -198,7 +199,7 @@ export type NativeStackNavigationOptions = {
    * @platform ios
    */
   headerLargeStyle?: StyleProp<{
-    backgroundColor?: string;
+    backgroundColor?: ColorValue;
   }>;
   /**
    * Whether to enable header with large title which collapses to regular header on scroll.
@@ -235,7 +236,7 @@ export type NativeStackNavigationOptions = {
     fontFamily?: string;
     fontSize?: number;
     fontWeight?: string;
-    color?: string;
+    color?: ColorValue;
   }>;
   /**
    * Whether to show the header. The header is shown by default.
@@ -247,7 +248,7 @@ export type NativeStackNavigationOptions = {
    * - backgroundColor
    */
   headerStyle?: StyleProp<{
-    backgroundColor?: string;
+    backgroundColor?: ColorValue;
   }>;
   /**
    * Whether to hide the elevation shadow (Android) or the bottom border (iOS) on the header.
@@ -271,7 +272,7 @@ export type NativeStackNavigationOptions = {
   /**
    * Tint color for the header. Changes the color of back button and title.
    */
-  headerTintColor?: string;
+  headerTintColor?: ColorValue;
   /**
    * Function which returns a React Element to render as the background of the header.
    * This is useful for using backgrounds such as an image, a gradient, blur effect etc.
@@ -306,7 +307,7 @@ export type NativeStackNavigationOptions = {
         /**
          * Tint color for the header.
          */
-        tintColor?: string;
+        tintColor?: ColorValue;
       }) => React.ReactNode);
   /**
    * How to align the the header title.
@@ -324,7 +325,7 @@ export type NativeStackNavigationOptions = {
    */
   headerTitleStyle?: StyleProp<
     Pick<TextStyle, 'fontFamily' | 'fontSize' | 'fontWeight'> & {
-      color?: string;
+      color?: ColorValue;
     }
   >;
   /**
@@ -377,26 +378,6 @@ export type NativeStackNavigationOptions = {
    */
   keyboardHandlingEnabled?: boolean;
   /**
-   * Sets the navigation bar color. Defaults to initial navigation bar color.
-   *
-   * @deprecated For all apps targeting Android SDK 35 or above edge-to-edge is enabled by default.
-   *  This prop is subject to removal in the future.
-   *  See: https://developer.android.com/about/versions/15/behavior-changes-15#ux.
-   *
-   * @platform android
-   */
-  navigationBarColor?: string;
-  /**
-   * Boolean indicating whether the content should be visible behind the navigation bar. Defaults to `false`.
-   *
-   * @deprecated For all apps targeting Android SDK 35 or above edge-to-edge is enabled by default.
-   *  This prop is subject to removal in the future.
-   *  See: https://developer.android.com/about/versions/15/behavior-changes-15#ux.
-   *
-   * @platform android
-   */
-  navigationBarTranslucent?: boolean;
-  /**
    * Sets the visibility of the navigation bar. Defaults to `false`.
    *
    * @platform android
@@ -404,51 +385,37 @@ export type NativeStackNavigationOptions = {
   navigationBarHidden?: boolean;
   /**
    * Sets the status bar animation (similar to the `StatusBar` component).
+   * On Android, setting either `fade` or `slide` will set the transition of status bar color. On iOS, this option applies to appereance animation of the status bar.
    * Requires setting `View controller-based status bar appearance -> YES` (or removing the config) in your `Info.plist` file.
    *
-   * Only supported on iOS.
+   * Defaults to `fade` on iOS and `none` on Android.
    *
-   * @platform ios
+   * Only supported on Android and iOS.
+   *
+   * @platform android, ios
    */
   statusBarAnimation?: ScreenProps['statusBarAnimation'];
-  /**
-   * Sets the status bar color (similar to the `StatusBar` component). Defaults to initial status bar color.
-   *
-   * @deprecated For all apps targeting Android SDK 35 or above edge-to-edge is enabled by default.
-   *  This prop is subject to removal in the future.
-   *  See: https://developer.android.com/about/versions/15/behavior-changes-15#ux.
-   *
-   * @platform android
-   */
-  statusBarBackgroundColor?: string;
   /**
    * Whether the status bar should be hidden on this screen.
    * Requires setting `View controller-based status bar appearance -> YES` in your Info.plist file.
    *
-   * Only supported on iOS.
+   * Only supported on Android and iOS.
    *
-   * @platform ios
+   * @platform android, ios
    */
   statusBarHidden?: boolean;
   /**
    * Sets the status bar color (similar to the `StatusBar` component).
    * Requires setting `View controller-based status bar appearance -> YES` (or removing the config) in your `Info.plist` file.
+   * `auto` and `inverted` are supported only on iOS. On Android, they will fallback to `light`.
    *
-   * Only supported on iOS.
+   * Defaults to `auto` on iOS and `light` on Android.
    *
-   * @platform ios
+   * Only supported on Android and iOS.
+   *
+   * @platform android, ios
    */
   statusBarStyle?: ScreenProps['statusBarStyle'];
-  /**
-   * Sets the translucency of the status bar. Defaults to `false`.
-   *
-   * @deprecated For all apps targeting Android SDK 35 or above edge-to-edge is enabled by default.
-   *  This prop is subject to removal in the future.
-   *  See: https://developer.android.com/about/versions/15/behavior-changes-15#ux.
-   *
-   * @platform android
-   */
-  statusBarTranslucent?: boolean;
   /**
    * Sets the direction in which you should swipe to dismiss the screen.
    * When using `vertical` option, options `fullScreenGestureEnabled: true`, `animationMatchesGesture: true` and `animation: 'slide_from_bottom'` are set by default.
@@ -568,7 +535,7 @@ export type NativeStackNavigationOptions = {
    * There is also possibility to specify `fitToContents` literal, which intents to set the sheet height
    * to the height of its contents.
    *
-   * Please note that the array **must** be sorted in ascending order. This invariant is verified only in developement mode,
+   * Note that the array **must** be sorted in ascending order. This invariant is verified only in developement mode,
    * where violation results in error.
    *
    * **Android is limited to up 3 values in the array** -- any surplus values, beside first three are ignored.
@@ -675,7 +642,7 @@ export type NativeStackNavigationOptions = {
    * This option is provided, because due to implementation details it might be problematic
    * to implement such layout with JS-only code.
    *
-   * Please note that this prop is marked as unstable and might be subject of breaking changes,
+   * Note that this prop is marked as unstable and might be subject of breaking changes,
    * including removal, in particular when we find solution that will make implementing it with JS
    * straightforward.
    *

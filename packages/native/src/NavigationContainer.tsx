@@ -5,14 +5,12 @@ import {
   getStateFromPath,
   type NavigationContainerProps,
   type NavigationContainerRef,
-  type NavigationState,
   type ParamListBase,
   ThemeProvider,
   validatePathConfig,
 } from '@react-navigation/core';
 import * as React from 'react';
 import { I18nManager } from 'react-native';
-import useLatestCallback from 'use-latest-callback';
 
 import { LinkingContext } from './LinkingContext';
 import { LocaleDirContext } from './LocaleDirContext';
@@ -22,14 +20,12 @@ import type {
   LinkingOptions,
   LocaleDirection,
 } from './types';
-import { UnhandledLinkingContext } from './UnhandledLinkingContext';
 import { useBackButton } from './useBackButton';
 import { useDocumentTitle } from './useDocumentTitle';
 import { useLinking } from './useLinking';
 import { useThenable } from './useThenable';
 
 declare global {
-  // eslint-disable-next-line no-var
   var REACT_NAVIGATION_DEVTOOLS: WeakMap<
     NavigationContainerRef<any>,
     { readonly linking: LinkingOptions<any> }
@@ -68,14 +64,10 @@ function NavigationContainerInner(
     linking,
     fallback = null,
     documentTitle,
-    onReady,
-    onStateChange,
     ...rest
   }: Props<ParamListBase>,
   ref?: React.Ref<NavigationContainerRef<ParamListBase> | null>
 ) {
-  const isLinkingEnabled = linking ? linking.enabled !== false : false;
-
   if (linking?.config) {
     validatePathConfig(linking.config);
   }
@@ -86,67 +78,36 @@ function NavigationContainerInner(
   useBackButton(refContainer);
   useDocumentTitle(refContainer, documentTitle);
 
-  const [lastUnhandledLink, setLastUnhandledLink] = React.useState<
-    string | undefined
-  >();
-
-  const { getInitialState } = useLinking(
-    refContainer,
-    {
-      enabled: isLinkingEnabled,
-      prefixes: [],
-      ...linking,
-    },
-    setLastUnhandledLink
-  );
-
-  const linkingContext = React.useMemo(() => ({ options: linking }), [linking]);
-
-  const unhandledLinkingContext = React.useMemo(
-    () => ({ lastUnhandledLink, setLastUnhandledLink }),
-    [lastUnhandledLink, setLastUnhandledLink]
-  );
-
-  const onReadyForLinkingHandling = useLatestCallback(() => {
-    // If the screen path matches lastUnhandledLink, we do not track it
-    const path = refContainer.current?.getCurrentRoute()?.path;
-    setLastUnhandledLink((previousLastUnhandledLink) => {
-      if (previousLastUnhandledLink === path) {
-        return undefined;
-      }
-      return previousLastUnhandledLink;
-    });
-    onReady?.();
-  });
-
-  const onStateChangeForLinkingHandling = useLatestCallback(
-    (state: Readonly<NavigationState> | undefined) => {
-      // If the screen path matches lastUnhandledLink, we do not track it
-      const path = refContainer.current?.getCurrentRoute()?.path;
-      setLastUnhandledLink((previousLastUnhandledLink) => {
-        if (previousLastUnhandledLink === path) {
-          return undefined;
-        }
-        return previousLastUnhandledLink;
-      });
-      onStateChange?.(state);
+  const linkingConfig = React.useMemo(() => {
+    if (linking == null) {
+      return {
+        options: {
+          enabled: false,
+        },
+      };
     }
-  );
+
+    return {
+      options: {
+        ...linking,
+        enabled: linking.enabled !== false,
+        prefixes: linking.prefixes ?? ['*'],
+        getStateFromPath: linking?.getStateFromPath ?? getStateFromPath,
+        getPathFromState: linking?.getPathFromState ?? getPathFromState,
+        getActionFromState: linking?.getActionFromState ?? getActionFromState,
+      },
+    };
+  }, [linking]);
+
+  const { getInitialState } = useLinking(refContainer, linkingConfig.options);
+
   // Add additional linking related info to the ref
   // This will be used by the devtools
   React.useEffect(() => {
     if (refContainer.current) {
       REACT_NAVIGATION_DEVTOOLS.set(refContainer.current, {
         get linking() {
-          return {
-            ...linking,
-            enabled: isLinkingEnabled,
-            prefixes: linking?.prefixes ?? [],
-            getStateFromPath: linking?.getStateFromPath ?? getStateFromPath,
-            getPathFromState: linking?.getPathFromState ?? getPathFromState,
-            getActionFromState:
-              linking?.getActionFromState ?? getActionFromState,
-          };
+          return linkingConfig.options;
         },
       });
     }
@@ -159,7 +120,7 @@ function NavigationContainerInner(
   React.useImperativeHandle(ref, () => refContainer.current);
 
   const isLinkingReady =
-    rest.initialState != null || !isLinkingEnabled || isResolved;
+    rest.initialState != null || !linkingConfig.options.enabled || isResolved;
 
   if (!isLinkingReady) {
     return (
@@ -171,20 +132,16 @@ function NavigationContainerInner(
 
   return (
     <LocaleDirContext.Provider value={direction}>
-      <UnhandledLinkingContext.Provider value={unhandledLinkingContext}>
-        <LinkingContext.Provider value={linkingContext}>
-          <BaseNavigationContainer
-            {...rest}
-            theme={theme}
-            onReady={onReadyForLinkingHandling}
-            onStateChange={onStateChangeForLinkingHandling}
-            initialState={
-              rest.initialState == null ? initialState : rest.initialState
-            }
-            ref={refContainer}
-          />
-        </LinkingContext.Provider>
-      </UnhandledLinkingContext.Provider>
+      <LinkingContext.Provider value={linkingConfig}>
+        <BaseNavigationContainer
+          {...rest}
+          theme={theme}
+          initialState={
+            rest.initialState == null ? initialState : rest.initialState
+          }
+          ref={refContainer}
+        />
+      </LinkingContext.Provider>
     </LocaleDirContext.Provider>
   );
 }

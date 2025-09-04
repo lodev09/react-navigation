@@ -2,18 +2,18 @@ import {
   getHeaderTitle,
   Header,
   SafeAreaProviderCompat,
-  Screen,
+  Screen as ScreenContent,
 } from '@react-navigation/elements';
 import {
   type NavigationAction,
   type ParamListBase,
   StackActions,
   type TabNavigationState,
-  useLocale,
 } from '@react-navigation/native';
 import * as React from 'react';
 import { Animated, Platform, StyleSheet } from 'react-native';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
+import { Screen, ScreenContainer } from 'react-native-screens';
 
 import {
   FadeTransition,
@@ -32,7 +32,6 @@ import { BottomTabBarHeightCallbackContext } from '../utils/BottomTabBarHeightCa
 import { BottomTabBarHeightContext } from '../utils/BottomTabBarHeightContext';
 import { useAnimatedHashMap } from '../utils/useAnimatedHashMap';
 import { BottomTabBar, getTabBarHeight } from './BottomTabBar';
-import { MaybeScreen, MaybeScreenContainer } from './ScreenFallback';
 
 type Props = BottomTabNavigationConfig & {
   state: TabNavigationState<ParamListBase>;
@@ -86,8 +85,6 @@ export function BottomTabView(props: Props) {
   } = props;
 
   const focusedRouteKey = state.routes[state.index].key;
-
-  const { direction } = useLocale();
 
   /**
    * List of loaded tabs, tabs will be loaded when navigated to.
@@ -233,24 +230,29 @@ export function BottomTabView(props: Props) {
 
   const { tabBarPosition = 'bottom' } = descriptors[focusedRouteKey].options;
 
+  const tabBarElement = (
+    <BottomTabBarHeightCallbackContext.Provider
+      key="tabbar"
+      value={setTabBarHeight}
+    >
+      {renderTabBar()}
+    </BottomTabBarHeightCallbackContext.Provider>
+  );
+
   return (
     <SafeAreaProviderCompat
       style={{
         flexDirection:
           tabBarPosition === 'left' || tabBarPosition === 'right'
-            ? (tabBarPosition === 'left' && direction === 'ltr') ||
-              (tabBarPosition === 'right' && direction === 'rtl')
-              ? 'row-reverse'
-              : 'row'
+            ? 'row'
             : 'column',
       }}
     >
-      {tabBarPosition === 'top' ? (
-        <BottomTabBarHeightCallbackContext.Provider value={setTabBarHeight}>
-          {renderTabBar()}
-        </BottomTabBarHeightCallbackContext.Provider>
-      ) : null}
-      <MaybeScreenContainer
+      {tabBarPosition === 'top' || tabBarPosition === 'left'
+        ? tabBarElement
+        : null}
+      <ScreenContainer
+        key="screens"
         enabled={detachInactiveScreens}
         hasTwoStates={hasTwoStates}
         style={styles.screens}
@@ -278,10 +280,9 @@ export function BottomTabView(props: Props) {
 
           const {
             freezeOnBlur,
-            header = ({ layout, options }: BottomTabHeaderProps) => (
+            header = ({ options }: BottomTabHeaderProps) => (
               <Header
                 {...options}
-                layout={layout}
                 title={getHeaderTitle(options, route.name)}
               />
             ),
@@ -314,10 +315,10 @@ export function BottomTabView(props: Props) {
               : STATE_INACTIVE;
 
           return (
-            <MaybeScreen
+            <Screen
               key={route.key}
               style={[StyleSheet.absoluteFill, { zIndex: isFocused ? 0 : -1 }]}
-              active={activityState}
+              activityState={activityState}
               enabled={detachInactiveScreens}
               freezeOnBlur={freezeOnBlur}
               shouldFreeze={activityState === STATE_INACTIVE && !isPreloaded}
@@ -325,7 +326,7 @@ export function BottomTabView(props: Props) {
               <BottomTabBarHeightContext.Provider
                 value={tabBarPosition === 'bottom' ? tabBarHeight : 0}
               >
-                <Screen
+                <ScreenContent
                   focused={isFocused}
                   route={descriptor.route}
                   navigation={descriptor.navigation}
@@ -333,7 +334,6 @@ export function BottomTabView(props: Props) {
                   headerStatusBarHeight={headerStatusBarHeight}
                   headerTransparent={headerTransparent}
                   header={header({
-                    layout: dimensions,
                     route: descriptor.route,
                     navigation:
                       descriptor.navigation as BottomTabNavigationProp<ParamListBase>,
@@ -342,17 +342,15 @@ export function BottomTabView(props: Props) {
                   style={[customSceneStyle, animationEnabled && sceneStyle]}
                 >
                   {descriptor.render()}
-                </Screen>
+                </ScreenContent>
               </BottomTabBarHeightContext.Provider>
-            </MaybeScreen>
+            </Screen>
           );
         })}
-      </MaybeScreenContainer>
-      {tabBarPosition !== 'top' ? (
-        <BottomTabBarHeightCallbackContext.Provider value={setTabBarHeight}>
-          {renderTabBar()}
-        </BottomTabBarHeightCallbackContext.Provider>
-      ) : null}
+      </ScreenContainer>
+      {tabBarPosition === 'bottom' || tabBarPosition === 'right'
+        ? tabBarElement
+        : null}
     </SafeAreaProviderCompat>
   );
 }

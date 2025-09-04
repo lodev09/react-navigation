@@ -102,7 +102,7 @@ export type DefaultNavigatorOptions<
    *
    * This must be a pure function and cannot reference outside dynamic variables.
    */
-  UNSTABLE_router?: <Action extends NavigationAction>(
+  router?: <Action extends NavigationAction>(
     original: Router<State, Action>
   ) => Partial<Router<State, Action>>;
 } & (NavigatorID extends string
@@ -291,39 +291,6 @@ type NavigationHelpersCommon<
   ): void;
 
   /**
-   * Navigate to a route in current navigation tree.
-   *
-   * @deprecated Use `navigate` instead.
-   *
-   * @param screen Name of the route to navigate to.
-   * @param [params] Params object for the route.
-   */
-  navigateDeprecated<RouteName extends keyof ParamList>(
-    ...args: RouteName extends unknown
-      ? undefined extends ParamList[RouteName]
-        ? [screen: RouteName, params?: ParamList[RouteName]]
-        : [screen: RouteName, params: ParamList[RouteName]]
-      : never
-  ): void;
-
-  /**
-   * Navigate to a route in current navigation tree.
-   *
-   * @deprecated Use `navigate` instead.
-   *
-   * @param options Object with `name` for the route to navigate to, and a `params` object.
-   */
-  navigateDeprecated<RouteName extends keyof ParamList>(
-    options: RouteName extends unknown
-      ? {
-          name: RouteName;
-          params: ParamList[RouteName];
-          merge?: boolean;
-        }
-      : never
-  ): void;
-
-  /**
    * Preloads the route in current navigation tree.
    *
    * @param screen Name of the route to preload.
@@ -383,30 +350,42 @@ type NavigationHelpersCommon<
    * Note that this method doesn't re-render screen when the result changes. So don't use it in `render`.
    */
   getState(): State;
-  /**
-   * Schedules the given state to be used as navigation state when the list of screens defined in the navigator changes
-   * instead of automatically calculating the new state, e.g. due to conditional rendering or dynamically defining screens.
-   *
-   * @param state Navigation state object.
-   */
-  setStateForNextRouteNamesChange(state: PartialState<State> | State): void;
 } & PrivateValueStore<[ParamList, unknown, unknown]>;
+
+type NavigationHelpersRoute<
+  ParamList extends {},
+  RouteName extends keyof ParamList = Keyof<ParamList>,
+> = {
+  /**
+   * Update the param object for the route.
+   * The new params will be shallow merged with the old one.
+   *
+   * @param params Partial params object for the current route.
+   */
+  setParams(
+    params: ParamList[RouteName] extends undefined
+      ? undefined
+      : Partial<ParamList[RouteName]>
+  ): void;
+
+  /**
+   * Replace the param object for the route
+   *
+   * @param params Params object for the current route.
+   */
+  replaceParams(
+    params: ParamList[RouteName] extends undefined
+      ? undefined
+      : ParamList[RouteName]
+  ): void;
+};
 
 export type NavigationHelpers<
   ParamList extends ParamListBase,
   EventMap extends EventMapBase = {},
 > = NavigationHelpersCommon<ParamList> &
-  EventEmitter<EventMap> & {
-    /**
-     * Update the param object for the route.
-     * The new params will be shallow merged with the old one.
-     *
-     * @param params Params object for the current route.
-     */
-    setParams<RouteName extends keyof ParamList>(
-      params: Partial<ParamList[RouteName]>
-    ): void;
-  };
+  EventEmitter<EventMap> &
+  NavigationHelpersRoute<ParamList, keyof ParamList>;
 
 export type NavigationContainerProps = {
   /**
@@ -425,16 +404,6 @@ export type NavigationContainerProps = {
    * Callback which is called when an action is not handled.
    */
   onUnhandledAction?: (action: Readonly<NavigationAction>) => void;
-  /**
-   * Whether child navigator should handle a navigation action.
-   * The child navigator needs to be mounted before it can handle the action.
-   * Defaults to `false`.
-   *
-   * This will be removed in the next major release.
-   *
-   * @deprecated Use nested navigation API instead
-   */
-  navigationInChildEnabled?: boolean;
   /**
    * Theme object for the UI elements.
    */
@@ -463,25 +432,14 @@ export type NavigationProp<
   getParent<T = NavigationProp<ParamListBase> | undefined>(id?: NavigatorID): T;
 
   /**
-   * Update the param object for the route.
-   * The new params will be shallow merged with the old one.
-   *
-   * @param params Params object for the current route.
-   */
-  setParams(
-    params: ParamList[RouteName] extends undefined
-      ? undefined
-      : Partial<ParamList[RouteName]>
-  ): void;
-
-  /**
    * Update the options for the route.
    * The options object will be shallow merged with default options object.
    *
    * @param update Options object or a callback which takes the options from navigator config and returns a new options object.
    */
   setOptions(options: Partial<ScreenOptions>): void;
-} & EventConsumer<EventMap & EventMapCore<State>> &
+} & NavigationHelpersRoute<ParamList, RouteName> &
+  EventConsumer<EventMap & EventMapCore<State>> &
   PrivateValueStore<[ParamList, RouteName, EventMap]>;
 
 export type RouteProp<
@@ -981,6 +939,7 @@ export type NavigatorScreenParams<ParamList extends {}> =
   | {
       screen?: never;
       params?: never;
+      merge?: never;
       initial?: never;
       pop?: never;
       path?: string;
@@ -991,6 +950,7 @@ export type NavigatorScreenParams<ParamList extends {}> =
         ? {
             screen: RouteName;
             params?: ParamList[RouteName];
+            merge?: boolean;
             initial?: boolean;
             path?: string;
             pop?: boolean;
@@ -999,6 +959,7 @@ export type NavigatorScreenParams<ParamList extends {}> =
         : {
             screen: RouteName;
             params: ParamList[RouteName];
+            merge?: boolean;
             initial?: boolean;
             path?: string;
             pop?: boolean;

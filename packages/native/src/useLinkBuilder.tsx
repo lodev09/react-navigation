@@ -3,13 +3,13 @@ import {
   findFocusedRoute,
   getActionFromState,
   getPathFromState,
-  getStateFromPath,
   NavigationHelpersContext,
   NavigationRouteContext,
   useStateForPath,
 } from '@react-navigation/core';
 import * as React from 'react';
 
+import { getStateFromHref } from './getStateFromHref';
 import { LinkingContext } from './LinkingContext';
 
 type MinimalState = {
@@ -30,7 +30,6 @@ export function useLinkBuilder() {
   const focusedRouteState = useStateForPath();
 
   const getPathFromStateHelper = options?.getPathFromState ?? getPathFromState;
-  const getStateFromPathHelper = options?.getStateFromPath ?? getStateFromPath;
   const getActionFromStateHelper =
     options?.getActionFromState ?? getActionFromState;
 
@@ -103,21 +102,19 @@ export function useLinkBuilder() {
 
   const buildAction = React.useCallback(
     (href: string) => {
-      if (!href.startsWith('/')) {
-        throw new Error(`The href must start with '/' (${href}).`);
-      }
-
-      const state = getStateFromPathHelper(href, options?.config);
+      const state = getStateFromHref(href, options);
 
       if (state) {
         const action = getActionFromStateHelper(state, options?.config);
 
         return action ?? CommonActions.reset(state);
       } else {
-        throw new Error('Failed to parse the href to a navigation state.');
+        throw new Error(
+          `Failed to parse href '${href}' to a navigation state.`
+        );
       }
     },
-    [options?.config, getStateFromPathHelper, getActionFromStateHelper]
+    [options, getActionFromStateHelper]
   );
 
   return {

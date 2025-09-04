@@ -7,7 +7,6 @@ import { NavigationContainer } from '../NavigationContainer';
 import { useLinkBuilder } from '../useLinkBuilder';
 
 const config = {
-  prefixes: ['https://example.com'],
   config: {
     screens: {
       Foo: {
@@ -325,6 +324,205 @@ test('builds action from href in nested navigator', () => {
           )}
         </StackA.Screen>
       </StackA.Navigator>
+    </NavigationContainer>
+  );
+});
+
+test('builds action from href for URL with scheme and host', () => {
+  expect.assertions(2);
+
+  const Root = () => {
+    const { buildAction } = useLinkBuilder();
+
+    expect(buildAction('myapp://foo/bar/42')).toEqual({
+      type: 'NAVIGATE',
+      payload: {
+        name: 'Foo',
+        params: {
+          initial: true,
+          screen: 'Bar',
+          params: { id: '42' },
+          path: '/foo/bar/42',
+        },
+        pop: true,
+      },
+    });
+
+    expect(buildAction('http://myapp.org/foo/bar/42')).toEqual({
+      type: 'NAVIGATE',
+      payload: {
+        name: 'Foo',
+        params: {
+          initial: true,
+          screen: 'Bar',
+          params: { id: '42' },
+          path: '/foo/bar/42',
+        },
+        pop: true,
+      },
+    });
+
+    return null;
+  };
+
+  render(
+    <NavigationContainer linking={config}>
+      <Root />
+    </NavigationContainer>
+  );
+});
+
+test('builds action from href for URL with custom prefixes', () => {
+  // expect.assertions(2);
+
+  const Root = () => {
+    const { buildAction } = useLinkBuilder();
+
+    expect(buildAction('foo://foo/bar/42')).toEqual({
+      type: 'NAVIGATE',
+      payload: {
+        name: 'Foo',
+        params: {
+          initial: true,
+          screen: 'Bar',
+          params: { id: '42' },
+          path: '/foo/bar/42',
+        },
+        pop: true,
+      },
+    });
+
+    expect(buildAction('https://foo.example.com/foo/bar/42')).toEqual({
+      type: 'NAVIGATE',
+      payload: {
+        name: 'Foo',
+        params: {
+          initial: true,
+          screen: 'Bar',
+          params: { id: '42' },
+          path: '/foo/bar/42',
+        },
+        pop: true,
+      },
+    });
+
+    expect(buildAction('https://test.myapp.com/foo/bar/42')).toEqual({
+      type: 'NAVIGATE',
+      payload: {
+        name: 'Foo',
+        params: {
+          initial: true,
+          screen: 'Bar',
+          params: { id: '42' },
+          path: '/foo/bar/42',
+        },
+        pop: true,
+      },
+    });
+
+    expect(() => buildAction('otherscheme://foo/bar/42')).toThrow(
+      "Got invalid href 'otherscheme://foo/bar/42'. It must start with '/' or match one of the prefixes: 'foo://', 'https://foo.example.com', 'https://*.myapp.com'."
+    );
+
+    expect(() =>
+      buildAction('https://test.otherdomain.com/foo/bar/42')
+    ).toThrow(
+      "Got invalid href 'https://test.otherdomain.com/foo/bar/42'. It must start with '/' or match one of the prefixes: 'foo://', 'https://foo.example.com', 'https://*.myapp.com'."
+    );
+
+    return null;
+  };
+
+  render(
+    <NavigationContainer
+      linking={{
+        ...config,
+        prefixes: ['foo://', 'https://foo.example.com', 'https://*.myapp.com'],
+      }}
+    >
+      <Root />
+    </NavigationContainer>
+  );
+});
+
+test('throws for invalid hrefs', () => {
+  // expect.assertions(2);
+
+  const Root = () => {
+    const { buildAction } = useLinkBuilder();
+
+    expect(() => buildAction('foo/bar/42')).toThrow(
+      "Got invalid href 'foo/bar/42'. It must start with '/' or match one of the prefixes: '*'."
+    );
+
+    return null;
+  };
+
+  render(
+    <NavigationContainer linking={config}>
+      <Root />
+    </NavigationContainer>
+  );
+});
+
+test('throws if no prefixes are defined', () => {
+  expect.assertions(3);
+
+  const Root = () => {
+    const { buildAction } = useLinkBuilder();
+
+    expect(() => buildAction('myapp://foo/bar/42')).toThrow(
+      "Failed to parse href 'myapp://foo/bar/42'. It doesn't start with '/' and no prefixes are defined in linking config."
+    );
+
+    expect(() => buildAction('https://myapp.org/foo/bar/42')).toThrow(
+      "Failed to parse href 'https://myapp.org/foo/bar/42'. It doesn't start with '/' and no prefixes are defined in linking config."
+    );
+
+    expect(() => buildAction('foo/bar/42')).toThrow(
+      "Failed to parse href 'foo/bar/42'. It doesn't start with '/' and no prefixes are defined in linking config."
+    );
+
+    return null;
+  };
+
+  render(
+    <NavigationContainer
+      linking={{
+        ...config,
+        prefixes: [],
+      }}
+    >
+      <Root />
+    </NavigationContainer>
+  );
+});
+
+test('throws for hrefs that do not match the filter', () => {
+  expect.assertions(2);
+
+  const Root = () => {
+    const { buildAction } = useLinkBuilder();
+
+    expect(() => buildAction('https://myapp.org/foo/bar/42')).not.toThrow(
+      "Failed to parse href 'https://myapp.org/foo/bar/42'. It doesn't match the filter specified in linking config."
+    );
+
+    expect(() => buildAction('https://myapp.org/foo/bar/42+skip-this')).toThrow(
+      "Failed to parse href 'https://myapp.org/foo/bar/42+skip-this'. It doesn't match the filter specified in linking config."
+    );
+
+    return null;
+  };
+
+  render(
+    <NavigationContainer
+      linking={{
+        ...config,
+        filter: (href) => !href.includes('+skip-this'),
+      }}
+    >
+      <Root />
     </NavigationContainer>
   );
 });

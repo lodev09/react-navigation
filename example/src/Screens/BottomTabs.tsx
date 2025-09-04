@@ -6,6 +6,7 @@ import {
   useBottomTabBarHeight,
 } from '@react-navigation/bottom-tabs';
 import {
+  Button,
   HeaderBackButton,
   HeaderButton,
   PlatformPressable,
@@ -16,10 +17,12 @@ import {
   type PathConfigMap,
   useIsFocused,
   useLocale,
+  useNavigation,
 } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import * as React from 'react';
 import {
+  type ColorValue,
   Image,
   Platform,
   ScrollView,
@@ -27,8 +30,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SystemBars } from 'react-native-edge-to-edge';
 
+import { SystemBars } from '../edge-to-edge';
 import { Albums } from '../Shared/Albums';
 import { Chat } from '../Shared/Chat';
 import { Contacts } from '../Shared/Contacts';
@@ -36,7 +39,7 @@ import { NativeStack, type NativeStackParams } from './NativeStack';
 
 const getTabBarIcon =
   (name: React.ComponentProps<typeof MaterialCommunityIcons>['name']) =>
-  ({ color, size }: { color: string; size: number }) => (
+  ({ color, size }: { color: ColorValue; size: number }) => (
     <MaterialCommunityIcons name={name} color={color} size={size} />
   );
 
@@ -44,7 +47,7 @@ export type BottomTabParams = {
   TabStack: NavigatorScreenParams<NativeStackParams>;
   TabAlbums: undefined;
   TabContacts: undefined;
-  TabChat: undefined;
+  TabChat: { count: number } | undefined;
 };
 
 const linking: PathConfigMap<BottomTabParams> = {
@@ -58,6 +61,8 @@ const linking: PathConfigMap<BottomTabParams> = {
 };
 
 const AlbumsScreen = () => {
+  const navigation =
+    useNavigation<BottomTabScreenProps<BottomTabParams>['navigation']>();
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
@@ -71,11 +76,26 @@ const AlbumsScreen = () => {
           paddingBottom: tabBarHeight,
         }}
       >
+        <View style={styles.buttons}>
+          <Button
+            variant="filled"
+            onPress={() => {
+              navigation.navigate('TabChat', { count: i++ });
+            }}
+          >
+            Go to Chat
+          </Button>
+          <Button variant="tinted" onPress={() => navigation.goBack()}>
+            Go back
+          </Button>
+        </View>
         <Albums scrollEnabled={false} />
       </ScrollView>
     </>
   );
 };
+
+let i = 1;
 
 const Tab = createBottomTabNavigator<BottomTabParams>();
 
@@ -100,6 +120,7 @@ export function BottomTabs() {
   return (
     <>
       <Tab.Navigator
+        backBehavior="fullHistory"
         screenOptions={({
           navigation,
         }: BottomTabScreenProps<BottomTabParams>) => ({
@@ -107,7 +128,7 @@ export function BottomTabs() {
             <HeaderBackButton {...props} onPress={navigation.goBack} />
           ),
           headerRight: ({ tintColor }) => (
-            <View style={styles.buttons}>
+            <View style={styles.headerRight}>
               <HeaderButton
                 onPress={() => {
                   showActionSheetWithOptions(
@@ -190,11 +211,12 @@ export function BottomTabs() {
         <Tab.Screen
           name="TabChat"
           component={Chat}
-          options={{
+          initialParams={{ count: i }}
+          options={({ route }) => ({
             title: 'Chat',
             tabBarIcon: getTabBarIcon('message-reply'),
-            tabBarBadge: 2,
-          }}
+            tabBarBadge: route.params?.count,
+          })}
         />
         <Tab.Screen
           name="TabContacts"
@@ -231,24 +253,28 @@ export function BottomTabs() {
                   <Image
                     source={require('../../assets/album-art-03.jpg')}
                     resizeMode="cover"
-                    style={{
-                      ...StyleSheet.absoluteFillObject,
-                      // Override default size of the image
-                      height: 'auto',
-                      width: 'auto',
-                    }}
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {
+                        // Override default size of the image
+                        height: 'auto',
+                        width: 'auto',
+                      },
+                    ]}
                   />
                 )}
                 <BlurView
                   tint="dark"
                   intensity={100}
-                  style={{
-                    ...StyleSheet.absoluteFillObject,
-                    end: isLargeScreen
-                      ? // Offset for right border of the sidebar
-                        -StyleSheet.hairlineWidth
-                      : 0,
-                  }}
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      end: isLargeScreen
+                        ? // Offset for right border of the sidebar
+                          -StyleSheet.hairlineWidth
+                        : 0,
+                    },
+                  ]}
                 />
               </>
             ),
@@ -280,10 +306,16 @@ BottomTabs.title = 'Bottom Tabs';
 BottomTabs.linking = linking;
 
 const styles = StyleSheet.create({
-  buttons: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
     marginEnd: 16,
+  },
+  buttons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    margin: 12,
   },
 });

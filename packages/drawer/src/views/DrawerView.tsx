@@ -1,9 +1,8 @@
 import {
-  getDefaultSidebarWidth,
   getHeaderTitle,
   Header,
   SafeAreaProviderCompat,
-  Screen,
+  Screen as ScreenContent,
 } from '@react-navigation/elements';
 import {
   DrawerActions,
@@ -17,7 +16,7 @@ import {
 import * as React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Drawer } from 'react-native-drawer-layout';
-import { useSafeAreaFrame } from 'react-native-safe-area-context';
+import { Screen, ScreenContainer } from 'react-native-screens';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -34,7 +33,6 @@ import { DrawerStatusContext } from '../utils/DrawerStatusContext';
 import { getDrawerStatusFromState } from '../utils/getDrawerStatusFromState';
 import { DrawerContent } from './DrawerContent';
 import { DrawerToggleButton } from './DrawerToggleButton';
-import { MaybeScreen, MaybeScreenContainer } from './ScreenFallback';
 
 type Props = DrawerNavigationConfig & {
   defaultStatus: DrawerStatus;
@@ -70,12 +68,12 @@ function DrawerViewBase({
     drawerType = Platform.select({ ios: 'slide', default: 'front' }),
     configureGestureHandler,
     keyboardDismissMode,
-    overlayColor = 'rgba(0, 0, 0, 0.5)',
     swipeEdgeWidth,
     swipeEnabled = Platform.OS !== 'web' &&
       Platform.OS !== 'windows' &&
       Platform.OS !== 'macos',
     swipeMinDistance,
+    overlayStyle,
     overlayAccessibilityLabel,
   } = descriptors[focusedRouteKey].options;
 
@@ -108,8 +106,6 @@ function DrawerViewBase({
 
     previousRouteKeyRef.current = focusedRouteKey;
   }, [descriptors, focusedRouteKey, navigation, state.routes]);
-
-  const dimensions = useSafeAreaFrame();
 
   const { colors } = useTheme();
 
@@ -214,7 +210,7 @@ function DrawerViewBase({
 
   const renderSceneContent = () => {
     return (
-      <MaybeScreenContainer
+      <ScreenContainer
         enabled={detachInactiveScreens}
         hasTwoStates
         style={styles.content}
@@ -237,10 +233,9 @@ function DrawerViewBase({
 
           const {
             freezeOnBlur,
-            header = ({ layout, options }: DrawerHeaderProps) => (
+            header = ({ options }: DrawerHeaderProps) => (
               <Header
                 {...options}
-                layout={layout}
                 title={getHeaderTitle(options, route.name)}
                 headerLeft={
                   drawerPosition === 'left' && options.headerLeft == null
@@ -261,15 +256,15 @@ function DrawerViewBase({
           } = descriptor.options;
 
           return (
-            <MaybeScreen
+            <Screen
               key={route.key}
               style={[StyleSheet.absoluteFill, { zIndex: isFocused ? 0 : -1 }]}
-              visible={isFocused}
+              activityState={isFocused ? 2 : 0}
               enabled={detachInactiveScreens}
               freezeOnBlur={freezeOnBlur}
               shouldFreeze={!isFocused && !isPreloaded}
             >
-              <Screen
+              <ScreenContent
                 focused={isFocused}
                 route={descriptor.route}
                 navigation={descriptor.navigation}
@@ -277,7 +272,6 @@ function DrawerViewBase({
                 headerStatusBarHeight={headerStatusBarHeight}
                 headerTransparent={headerTransparent}
                 header={header({
-                  layout: dimensions,
                   route: descriptor.route,
                   navigation:
                     descriptor.navigation as DrawerNavigationProp<ParamListBase>,
@@ -286,11 +280,11 @@ function DrawerViewBase({
                 style={sceneStyle}
               >
                 {descriptor.render()}
-              </Screen>
-            </MaybeScreen>
+              </ScreenContent>
+            </Screen>
           );
         })}
-      </MaybeScreenContainer>
+      </ScreenContainer>
     );
   };
 
@@ -305,7 +299,6 @@ function DrawerViewBase({
         onGestureCancel={handleGestureCancel}
         onTransitionStart={handleTransitionStart}
         onTransitionEnd={handleTransitionEnd}
-        layout={dimensions}
         direction={direction}
         configureGestureHandler={configureGestureHandler}
         swipeEnabled={swipeEnabled}
@@ -318,10 +311,7 @@ function DrawerViewBase({
         overlayAccessibilityLabel={overlayAccessibilityLabel}
         drawerPosition={drawerPosition}
         drawerStyle={[
-          {
-            backgroundColor: colors.card,
-            width: getDefaultSidebarWidth(dimensions),
-          },
+          { backgroundColor: colors.card },
           drawerType === 'permanent' &&
             ((
               Platform.OS === 'web'
@@ -350,7 +340,7 @@ function DrawerViewBase({
                 }),
           drawerStyle,
         ]}
-        overlayStyle={{ backgroundColor: overlayColor }}
+        overlayStyle={overlayStyle}
         renderDrawerContent={renderDrawerContent}
       >
         {renderSceneContent()}

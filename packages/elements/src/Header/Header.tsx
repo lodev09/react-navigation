@@ -1,21 +1,18 @@
 import { useNavigation, useTheme } from '@react-navigation/native';
-import Color from 'color';
 import * as React from 'react';
 import {
   Animated,
-  type LayoutChangeEvent,
   Platform,
   StyleSheet,
   View,
   type ViewStyle,
 } from 'react-native';
-import {
-  useSafeAreaFrame,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import searchIcon from '../assets/search-icon.png';
-import type { HeaderOptions, Layout } from '../types';
+import { Color } from '../Color';
+import type { HeaderOptions } from '../types';
+import { useFrameSize } from '../useFrameSize';
 import { getDefaultHeaderHeight } from './getDefaultHeaderHeight';
 import { HeaderBackButton } from './HeaderBackButton';
 import { HeaderBackground } from './HeaderBackground';
@@ -47,10 +44,6 @@ type Props = HeaderOptions & {
    */
   modal?: boolean;
   /**
-   * Layout of the screen.
-   */
-  layout?: Layout;
-  /**
    * Title text for the header.
    */
   title: string;
@@ -74,35 +67,14 @@ const warnIfHeaderStylesDefined = (styles: Record<string, any>) => {
 
 export function Header(props: Props) {
   const insets = useSafeAreaInsets();
-  const frame = useSafeAreaFrame();
   const { colors } = useTheme();
 
   const navigation = useNavigation();
   const isParentHeaderShown = React.useContext(HeaderShownContext);
 
   const [searchBarVisible, setSearchBarVisible] = React.useState(false);
-  const [titleLayout, setTitleLayout] = React.useState<Layout | undefined>(
-    undefined
-  );
-
-  const onTitleLayout = (e: LayoutChangeEvent) => {
-    const { height, width } = e.nativeEvent.layout;
-
-    setTitleLayout((titleLayout) => {
-      if (
-        titleLayout &&
-        height === titleLayout.height &&
-        width === titleLayout.width
-      ) {
-        return titleLayout;
-      }
-
-      return { height, width };
-    });
-  };
 
   const {
-    layout = frame,
     modal = false,
     back,
     title,
@@ -113,6 +85,7 @@ export function Header(props: Props) {
     headerTransparent,
     headerTintColor,
     headerBackground,
+    headerBlurEffect,
     headerRight,
     headerTitleAllowFontScaling: titleAllowFontScaling,
     headerTitleStyle: titleStyle,
@@ -129,10 +102,16 @@ export function Header(props: Props) {
     headerStatusBarHeight = isParentHeaderShown ? 0 : insets.top,
   } = props;
 
-  const defaultHeight = getDefaultHeaderHeight(
-    layout,
-    modal,
-    headerStatusBarHeight
+  const isLargeIPad = useFrameSize(
+    (frame) => Platform.OS === 'ios' && frame.width >= IPAD_MINI_MEDIUM_WIDTH
+  );
+
+  const defaultHeight = useFrameSize((frame) =>
+    getDefaultHeaderHeight({
+      landscape: frame.width > frame.height,
+      modalPresentation: modal,
+      topInset: headerStatusBarHeight,
+    })
   );
 
   const {
@@ -259,8 +238,6 @@ export function Header(props: Props) {
         pressColor: headerPressColor,
         pressOpacity: headerPressOpacity,
         displayMode: headerBackButtonDisplayMode,
-        titleLayout,
-        screenLayout: layout,
         canGoBack: Boolean(back),
         onPress: back ? navigation.goBack : undefined,
         label: back?.title,
@@ -285,47 +262,66 @@ export function Header(props: Props) {
         )
       : customTitle;
 
+  const buttonMinWidth =
+    headerTitleAlign === 'center' && (leftButton || rightButton)
+      ? headerBackButtonDisplayMode !== 'minimal'
+        ? 80
+        : 32
+      : 0;
+
   return (
     <Animated.View
-      pointerEvents="box-none"
-      style={[{ height, minHeight, maxHeight, opacity, transform }]}
+      style={[
+        {
+          pointerEvents: 'box-none',
+          height,
+          minHeight,
+          maxHeight,
+          opacity,
+          transform,
+        },
+      ]}
     >
       <Animated.View
-        pointerEvents="box-none"
-        style={[StyleSheet.absoluteFill, backgroundContainerStyle]}
+        style={[
+          StyleSheet.absoluteFill,
+          { pointerEvents: 'box-none' },
+          backgroundContainerStyle,
+        ]}
       >
         {headerBackground ? (
           headerBackground({ style: backgroundStyle })
         ) : (
           <HeaderBackground
-            pointerEvents={
-              // Allow touch through the header when background color is transparent
-              headerTransparent &&
-              (backgroundStyle.backgroundColor === 'transparent' ||
-                Color(backgroundStyle.backgroundColor).alpha() === 0)
-                ? 'none'
-                : 'auto'
-            }
-            style={backgroundStyle}
+            blurEffect={headerBlurEffect}
+            style={[
+              {
+                // Allow touch through the header when background color is transparent
+                pointerEvents:
+                  headerTransparent &&
+                  backgroundStyle.backgroundColor &&
+                  (backgroundStyle.backgroundColor === 'transparent' ||
+                    Color(backgroundStyle.backgroundColor)?.alpha() === 0)
+                    ? 'none'
+                    : 'auto',
+              },
+              backgroundStyle,
+            ]}
           />
         )}
       </Animated.View>
-      <View pointerEvents="none" style={{ height: headerStatusBarHeight }} />
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.content,
-          Platform.OS === 'ios' && frame.width >= IPAD_MINI_MEDIUM_WIDTH
-            ? styles.large
-            : null,
-        ]}
-      >
+      <View style={{ pointerEvents: 'none', height: headerStatusBarHeight }} />
+      <View style={[styles.content, isLargeIPad ? styles.large : null]}>
         <Animated.View
-          pointerEvents="box-none"
           style={[
             styles.start,
-            !searchBarVisible && headerTitleAlign === 'center' && styles.expand,
-            { marginStart: insets.left },
+            (Platform.OS === 'ios' || !searchBarVisible) &&
+              headerTitleAlign === 'center' &&
+              styles.expand,
+            {
+              minWidth: buttonMinWidth,
+              marginStart: insets.left,
+            },
             leftContainerStyle,
           ]}
         >
@@ -334,28 +330,8 @@ export function Header(props: Props) {
         {Platform.OS === 'ios' || !searchBarVisible ? (
           <>
             <Animated.View
-              pointerEvents="box-none"
               style={[
                 styles.title,
-                {
-                  // Avoid the title from going offscreen or overlapping buttons
-                  maxWidth:
-                    headerTitleAlign === 'center'
-                      ? layout.width -
-                        ((leftButton
-                          ? headerBackButtonDisplayMode !== 'minimal'
-                            ? 80
-                            : 32
-                          : 16) +
-                          (rightButton || headerSearchBarOptions ? 16 : 0) +
-                          Math.max(insets.left, insets.right)) *
-                          2
-                      : layout.width -
-                        ((leftButton ? 52 : 16) +
-                          (rightButton || headerSearchBarOptions ? 52 : 16) +
-                          insets.left -
-                          insets.right),
-                },
                 headerTitleAlign === 'left' && leftButton
                   ? { marginStart: 4 }
                   : { marginHorizontal: 16 },
@@ -366,16 +342,17 @@ export function Header(props: Props) {
                 children: title,
                 allowFontScaling: titleAllowFontScaling,
                 tintColor: headerTintColor,
-                onLayout: onTitleLayout,
-                style: titleStyle,
+                style: [styles.titleText, titleStyle],
               })}
             </Animated.View>
             <Animated.View
-              pointerEvents="box-none"
               style={[
                 styles.end,
                 styles.expand,
-                { marginEnd: insets.right },
+                {
+                  minWidth: buttonMinWidth,
+                  marginEnd: insets.right,
+                },
                 rightContainerStyle,
               ]}
             >
@@ -406,9 +383,9 @@ export function Header(props: Props) {
             }}
             tintColor={headerTintColor}
             style={[
+              StyleSheet.absoluteFill,
               Platform.OS === 'ios'
                 ? [
-                    StyleSheet.absoluteFill,
                     { paddingTop: headerStatusBarHeight ? 0 : 4 },
                     { backgroundColor: backgroundColor ?? colors.card },
                   ]
@@ -423,6 +400,7 @@ export function Header(props: Props) {
 
 const styles = StyleSheet.create({
   content: {
+    pointerEvents: 'box-none',
     flex: 1,
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -431,20 +409,28 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   title: {
+    flexShrink: 1,
     justifyContent: 'center',
+    pointerEvents: 'box-none',
+  },
+  titleText: {
+    textAlign: 'center',
   },
   start: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    pointerEvents: 'box-none',
   },
   end: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    pointerEvents: 'box-none',
   },
   expand: {
     flexGrow: 1,
+    flexShrink: 1,
     flexBasis: 0,
   },
 });

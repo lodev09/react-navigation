@@ -1,4 +1,3 @@
-// eslint-disable-next-line import-x/no-unresolved, import-x/extensions
 import { defineConfig, globalIgnores } from 'eslint/config';
 import { jest, react, recommended } from 'eslint-config-satya164';
 import sort from 'eslint-plugin-simple-import-sort';
@@ -48,10 +47,21 @@ export default defineConfig([
 
           paths: [
             {
+              name: 'color',
+              message:
+                'Import `Color` from `@react-navigation/elements` instead.',
+            },
+            {
               name: 'react-native',
               importNames: ['Text'],
               message:
                 'Import `Text` from `@react-navigation/elements` instead.',
+            },
+            {
+              name: 'react-native-safe-area-context',
+              importNames: ['useSafeAreaFrame'],
+              message:
+                'Import `useFrameSize` from `@react-navigation/elements` instead.',
             },
             {
               name: '@react-navigation/core',
@@ -74,7 +84,8 @@ export default defineConfig([
       'react-hooks/exhaustive-deps': [
         'error',
         {
-          additionalHooks: '(useAnimatedStyle|useAnimatedProps)',
+          additionalHooks:
+            '(useIsomorphicLayoutEffect|useAnimatedStyle|useAnimatedProps)',
         },
       ],
     },

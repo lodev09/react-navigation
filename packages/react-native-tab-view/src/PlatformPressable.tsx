@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {
+  type ColorValue,
   type GestureResponderEvent,
   Platform,
   Pressable,
@@ -8,7 +9,7 @@ import {
 
 export type Props = Omit<PressableProps, 'onPress'> & {
   href?: string;
-  pressColor?: string;
+  pressColor?: ColorValue;
   pressOpacity?: number;
   onPress?: (
     e: React.MouseEvent<HTMLAnchorElement, MouseEvent> | GestureResponderEvent
@@ -67,19 +68,20 @@ export function PlatformPressable({
   return (
     <Pressable
       android_ripple={
-        ANDROID_SUPPORTS_RIPPLE
+        ANDROID_SUPPORTS_RIPPLE && !disabled
           ? { color: pressColor, ...android_ripple }
           : undefined
       }
       style={({ pressed }) => [
         {
           cursor:
-            Platform.OS === 'web' || Platform.OS === 'ios'
+            (Platform.OS === 'web' || Platform.OS === 'ios') && !disabled
               ? // Pointer cursor on web
                 // Hover effect on iPad and visionOS
                 'pointer'
               : 'auto',
-          opacity: pressed && !ANDROID_SUPPORTS_RIPPLE ? pressOpacity : 1,
+          opacity:
+            !ANDROID_SUPPORTS_RIPPLE && pressed && !disabled ? pressOpacity : 1,
         } as const,
         typeof style === 'function' ? style({ pressed }) : style,
       ]}

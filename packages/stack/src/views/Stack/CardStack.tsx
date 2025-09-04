@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
+import { Screen, ScreenContainer } from 'react-native-screens';
 
 import {
   forModalPresentationIOS,
@@ -40,16 +41,15 @@ import type {
   Scene,
   StackAnimationName,
   StackCardStyleInterpolator,
-  StackDescriptor,
   StackDescriptorMap,
   StackHeaderMode,
+  StackNavigationOptions,
   TransitionPreset,
 } from '../../types';
 import { findLastIndex } from '../../utils/findLastIndex';
 import { getDistanceForDirection } from '../../utils/getDistanceForDirection';
 import { getModalRouteKeys } from '../../utils/getModalRoutesKeys';
 import type { Props as HeaderContainerProps } from '../Header/HeaderContainer';
-import { MaybeScreen, MaybeScreenContainer } from '../Screens';
 import { CardContainer } from './CardContainer';
 
 type GestureValues = {
@@ -190,7 +190,11 @@ const getHeaderHeights = (
     acc[curr.route.key] =
       typeof height === 'number'
         ? height
-        : getDefaultHeaderHeight(layout, isModal, headerStatusBarHeight);
+        : getDefaultHeaderHeight({
+            landscape: layout.width > layout.height,
+            modalPresentation: isModal,
+            topInset: headerStatusBarHeight,
+          });
 
     return acc;
   }, {});
@@ -198,24 +202,20 @@ const getHeaderHeights = (
 
 const getDistanceFromOptions = (
   layout: Layout,
-  descriptor: StackDescriptor | undefined,
+  options: StackNavigationOptions | undefined,
   isRTL: boolean
 ) => {
-  if (descriptor?.options.gestureDirection) {
-    return getDistanceForDirection(
-      layout,
-      descriptor?.options.gestureDirection,
-      isRTL
-    );
+  if (options?.gestureDirection) {
+    return getDistanceForDirection(layout, options.gestureDirection, isRTL);
   }
 
   const defaultGestureDirection =
-    descriptor?.options.presentation === 'modal'
+    options?.presentation === 'modal'
       ? ModalTransition.gestureDirection
       : DefaultTransition.gestureDirection;
 
-  const gestureDirection = descriptor?.options.animation
-    ? NAMED_TRANSITIONS_PRESETS[descriptor?.options.animation]?.gestureDirection
+  const gestureDirection = options?.animation
+    ? NAMED_TRANSITIONS_PRESETS[options?.animation]?.gestureDirection
     : defaultGestureDirection;
 
   return getDistanceForDirection(layout, gestureDirection, isRTL);
@@ -224,7 +224,7 @@ const getDistanceFromOptions = (
 const getProgressFromGesture = (
   gesture: Animated.Value,
   layout: Layout,
-  descriptor: StackDescriptor | undefined,
+  options: StackNavigationOptions | undefined,
   isRTL: boolean
 ) => {
   const distance = getDistanceFromOptions(
@@ -234,7 +234,7 @@ const getProgressFromGesture = (
       width: Math.max(1, layout.width),
       height: Math.max(1, layout.height),
     },
-    descriptor,
+    options,
     isRTL
   );
 
@@ -250,6 +250,20 @@ const getProgressFromGesture = (
     outputRange: [0, 1],
   });
 };
+
+function getDefaultAnimation(animation: StackAnimationName | undefined) {
+  // Disable screen transition animation by default on web, windows and macos to match the native behavior
+  const excludedPlatforms =
+    Platform.OS !== 'web' &&
+    Platform.OS !== 'windows' &&
+    Platform.OS !== 'macos';
+
+  return animation ?? (excludedPlatforms ? 'default' : 'none');
+}
+
+export function getAnimationEnabled(animation: StackAnimationName | undefined) {
+  return getDefaultAnimation(animation) !== 'none';
+}
 
 export class CardStack extends React.Component<Props, State> {
   static getDerivedStateFromProps(
@@ -274,11 +288,12 @@ export class CardStack extends React.Component<Props, State> {
       acc[curr.key] =
         state.gestures[curr.key] ||
         new Animated.Value(
-          (props.openingRouteKeys.includes(curr.key) && animation !== 'none') ||
+          (props.openingRouteKeys.includes(curr.key) &&
+            getAnimationEnabled(animation)) ||
           props.state.preloadedRoutes.includes(curr)
             ? getDistanceFromOptions(
                 state.layout,
-                descriptor,
+                descriptor?.options,
                 props.direction === 'rtl'
               )
             : 0
@@ -317,15 +332,19 @@ export class CardStack extends React.Component<Props, State> {
           state.descriptors[route.key] ||
           (oldScene ? oldScene.descriptor : FALLBACK_DESCRIPTOR);
 
-        const nextDescriptor =
+        const nextOptions =
           nextRoute &&
-          (props.descriptors[nextRoute?.key] ||
-            state.descriptors[nextRoute?.key]);
+          (
+            props.descriptors[nextRoute?.key] ||
+            state.descriptors[nextRoute?.key]
+          )?.options;
 
-        const previousDescriptor =
+        const previousOptions =
           previousRoute &&
-          (props.descriptors[previousRoute?.key] ||
-            state.descriptors[previousRoute?.key]);
+          (
+            props.descriptors[previousRoute?.key] ||
+            state.descriptors[previousRoute?.key]
+          )?.options;
 
         // When a screen is not the last, it should use next screen's transition config
         // Many transitions also animate the previous screen, so using 2 different transitions doesn't look right
@@ -335,25 +354,20 @@ export class CardStack extends React.Component<Props, State> {
         // but the majority of the transitions look alright
         const optionsForTransitionConfig =
           index !== self.length - 1 &&
-          nextDescriptor &&
-          nextDescriptor.options.presentation !== 'transparentModal'
-            ? nextDescriptor.options
+          nextOptions &&
+          nextOptions?.presentation !== 'transparentModal'
+            ? nextOptions
             : descriptor.options;
 
         // Assume modal if there are already modal screens in the stack
         // or current screen is a modal when no presentation is specified
         const isModal = modalRouteKeys.includes(route.key);
 
-        // Disable screen transition animation by default on web, windows and macos to match the native behavior
-        const excludedPlatforms =
-          Platform.OS !== 'web' &&
-          Platform.OS !== 'windows' &&
-          Platform.OS !== 'macos';
+        const animation = getDefaultAnimation(
+          optionsForTransitionConfig.animation
+        );
 
-        const animation =
-          optionsForTransitionConfig.animation ??
-          (excludedPlatforms ? 'default' : 'none');
-        const isAnimationEnabled = animation !== 'none';
+        const isAnimationEnabled = getAnimationEnabled(animation);
 
         const transitionPreset =
           animation !== 'default'
@@ -382,8 +396,8 @@ export class CardStack extends React.Component<Props, State> {
           (!(
             optionsForTransitionConfig.presentation === 'modal' ||
             optionsForTransitionConfig.presentation === 'transparentModal' ||
-            nextDescriptor?.options.presentation === 'modal' ||
-            nextDescriptor?.options.presentation === 'transparentModal' ||
+            nextOptions?.presentation === 'modal' ||
+            nextOptions?.presentation === 'transparentModal' ||
             getIsModalPresentation(cardStyleInterpolator)
           ) &&
           Platform.OS === 'ios' &&
@@ -413,16 +427,15 @@ export class CardStack extends React.Component<Props, State> {
             current: getProgressFromGesture(
               currentGesture,
               state.layout,
-              descriptor,
+              descriptor.options,
               isRTL
             ),
             next:
-              nextGesture &&
-              nextDescriptor?.options.presentation !== 'transparentModal'
+              nextGesture && nextOptions?.presentation !== 'transparentModal'
                 ? getProgressFromGesture(
                     nextGesture,
                     state.layout,
-                    nextDescriptor,
+                    nextOptions,
                     isRTL
                   )
                 : undefined,
@@ -430,7 +443,7 @@ export class CardStack extends React.Component<Props, State> {
               ? getProgressFromGesture(
                   previousGesture,
                   state.layout,
-                  previousDescriptor,
+                  previousOptions,
                   isRTL
                 )
               : undefined,
@@ -438,8 +451,8 @@ export class CardStack extends React.Component<Props, State> {
           __memo: [
             state.layout,
             descriptor,
-            nextDescriptor,
-            previousDescriptor,
+            nextOptions,
+            previousOptions,
             currentGesture,
             nextGesture,
             previousGesture,
@@ -643,7 +656,6 @@ export class CardStack extends React.Component<Props, State> {
       <React.Fragment key="header">
         {renderHeader({
           mode: 'float',
-          layout,
           scenes,
           getPreviousScene: this.getPreviousScene,
           getFocusedRoute: this.getFocusedRoute,
@@ -663,7 +675,7 @@ export class CardStack extends React.Component<Props, State> {
     return (
       <View style={styles.container}>
         {isFloatHeaderAbsolute ? null : floatingHeader}
-        <MaybeScreenContainer
+        <ScreenContainer
           enabled={detachInactiveScreens}
           style={styles.container}
           onLayout={this.handleLayout}
@@ -690,7 +702,7 @@ export class CardStack extends React.Component<Props, State> {
             // For those that should be active, but are not the top screen, the value is 1
             // For those on top of the stack and with interaction enabled, the value is 2
             // For the old implementation, it stays the same it was
-            let isScreenActive:
+            let activityState:
               | Animated.AnimatedInterpolation<0 | 1 | 2>
               | 0
               | 1
@@ -698,7 +710,7 @@ export class CardStack extends React.Component<Props, State> {
 
             if (index < routes.length - activeScreensLimit - 1 || isPreloaded) {
               // screen should be inactive because it is too deep in the stack
-              isScreenActive = STATE_INACTIVE;
+              activityState = STATE_INACTIVE;
             } else {
               const sceneForActivity = scenes[routes.length - 1];
               const outputValue =
@@ -707,7 +719,7 @@ export class CardStack extends React.Component<Props, State> {
                   : index >= routes.length - activeScreensLimit
                     ? STATE_TRANSITIONING_OR_BELOW_TOP // the screen should stay active after the transition, it is not on top but is in activeLimit
                     : STATE_INACTIVE; // the screen should be active only during the transition, it is at the edge of activeLimit
-              isScreenActive = sceneForActivity
+              activityState = sceneForActivity
                 ? sceneForActivity.progress.current.interpolate({
                     inputRange: [0, 1 - EPSILON, 1],
                     outputRange: [1, 1, outputValue],
@@ -748,15 +760,14 @@ export class CardStack extends React.Component<Props, State> {
               false;
 
             return (
-              <MaybeScreen
+              <Screen
                 key={route.key}
-                style={[StyleSheet.absoluteFill]}
+                style={[StyleSheet.absoluteFill, { pointerEvents: 'box-none' }]}
                 enabled={detachInactiveScreens}
-                active={isScreenActive}
+                activityState={activityState}
                 freezeOnBlur={freezeOnBlur}
-                shouldFreeze={isScreenActive === STATE_INACTIVE && !isPreloaded}
+                shouldFreeze={activityState === STATE_INACTIVE && !isPreloaded}
                 homeIndicatorHidden={autoHideHomeIndicator}
-                pointerEvents="box-none"
               >
                 <CardContainer
                   index={index}
@@ -793,10 +804,10 @@ export class CardStack extends React.Component<Props, State> {
                   detachCurrentScreen={detachCurrentScreen}
                   preloaded={isPreloaded}
                 />
-              </MaybeScreen>
+              </Screen>
             );
           })}
-        </MaybeScreenContainer>
+        </ScreenContainer>
         {isFloatHeaderAbsolute ? floatingHeader : null}
       </View>
     );

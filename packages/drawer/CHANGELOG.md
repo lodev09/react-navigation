@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.5.4](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.5.3...@react-navigation/drawer@7.5.4) (2025-07-25)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.5.3](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.5.2...@react-navigation/drawer@7.5.3) (2025-07-07)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.5.2](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.5.1...@react-navigation/drawer@7.5.2) (2025-06-24)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.5.1](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.5.0...@react-navigation/drawer@7.5.1) (2025-06-22)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+# [7.5.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.4.4...@react-navigation/drawer@7.5.0) (2025-06-21)
+
+### Features
+
+* use the new SafeAreaListener to listen to frame changes ([d9e295e](https://github.com/react-navigation/react-navigation/commit/d9e295eef251393b5280d661957e7d2c31a36ae1)) - by @satya164
+
+## [7.4.4](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.4.3...@react-navigation/drawer@7.4.4) (2025-06-19)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.4.3](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.4.2...@react-navigation/drawer@7.4.3) (2025-06-18)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.4.2](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.4.1...@react-navigation/drawer@7.4.2) (2025-06-14)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+## [7.4.1](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.4.0...@react-navigation/drawer@7.4.1) (2025-05-30)
+
+**Note:** Version bump only for package @react-navigation/drawer
+
+# [7.4.0](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.3.12...@react-navigation/drawer@7.4.0) (2025-05-30)
+
+### Features
+
+* add backBehavior: fullHistory to TabRouter ([e95e8bb](https://github.com/react-navigation/react-navigation/commit/e95e8bbf1f096929c6d443696459bf55af70c9d6)) - by @satya164
+
 ## [7.3.12](https://github.com/react-navigation/react-navigation/compare/@react-navigation/drawer@7.3.11...@react-navigation/drawer@7.3.12) (2025-05-11)
 
 **Note:** Version bump only for package @react-navigation/drawer

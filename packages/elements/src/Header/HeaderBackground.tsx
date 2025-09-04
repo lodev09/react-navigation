@@ -9,13 +9,71 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { getBlurBackgroundColor } from '../getBlurBackgroundColor';
+import type { HeaderOptions } from '../types';
+
 type Props = Omit<ViewProps, 'style'> & {
+  blurEffect?: HeaderOptions['headerBlurEffect'];
   style?: Animated.WithAnimatedValue<StyleProp<ViewStyle>>;
   children?: React.ReactNode;
 };
 
-export function HeaderBackground({ style, ...rest }: Props) {
+export function HeaderBackground({
+  blurEffect,
+  style,
+  children,
+  ...rest
+}: Props) {
   const { colors, dark } = useTheme();
+
+  let containerStyle, blurStyle, blurBackground, colorBackground;
+
+  if (Platform.OS === 'web' && blurEffect && blurEffect !== 'none') {
+    const blurBackgroundColor = getBlurBackgroundColor(blurEffect);
+
+    if (blurBackgroundColor) {
+      const backdropFilter = `saturate(180%) blur(30px)`;
+
+      blurStyle = {
+        // @ts-expect-error backdropFilter is web-only
+        backdropFilter,
+        webkitBackdropFilter: backdropFilter,
+      };
+
+      blurBackground = (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: -1,
+            backgroundColor: blurBackgroundColor,
+          }}
+        />
+      );
+
+      const flattenedStyle = StyleSheet.flatten(style) || {};
+
+      containerStyle = [flattenedStyle, { backgroundColor: 'transparent' }];
+      colorBackground =
+        'backgroundColor' in flattenedStyle &&
+        flattenedStyle.backgroundColor !== 'transparent' ? (
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                zIndex: -1,
+                backgroundColor: flattenedStyle.backgroundColor,
+              },
+            ]}
+          />
+        ) : null;
+    }
+  } else {
+    containerStyle = style;
+  }
 
   return (
     <Animated.View
@@ -24,16 +82,19 @@ export function HeaderBackground({ style, ...rest }: Props) {
         {
           backgroundColor: colors.card,
           borderBottomColor: colors.border,
-          ...(Platform.OS === 'ios' && {
-            shadowColor: dark
-              ? 'rgba(255, 255, 255, 0.45)'
-              : 'rgba(0, 0, 0, 1)',
-          }),
         },
-        style,
+        Platform.OS === 'ios' && {
+          shadowColor: dark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 1)',
+        },
+        blurStyle,
+        containerStyle,
       ]}
       {...rest}
-    />
+    >
+      {blurBackground}
+      {colorBackground}
+      {children}
+    </Animated.View>
   );
 }
 

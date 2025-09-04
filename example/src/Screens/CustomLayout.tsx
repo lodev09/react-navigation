@@ -3,6 +3,7 @@ import {
   getDefaultHeaderHeight,
   getHeaderTitle,
   Text,
+  useFrameSize,
 } from '@react-navigation/elements';
 import {
   CommonActions,
@@ -21,10 +22,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import {
-  useSafeAreaFrame,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COMMON_LINKING_CONFIG } from '../constants';
 import { Albums } from '../Shared/Albums';
@@ -117,8 +115,14 @@ const Stack = createStackNavigator<CustomLayoutParams>();
 export function NavigatorLayout() {
   const { colors } = useTheme();
 
-  const frame = useSafeAreaFrame();
   const insets = useSafeAreaInsets();
+  const defaultHeaderHeight = useFrameSize((size) =>
+    getDefaultHeaderHeight({
+      landscape: size.width > size.height,
+      modalPresentation: false,
+      topInset: insets.top,
+    })
+  );
 
   return (
     <Stack.Navigator
@@ -131,7 +135,7 @@ export function NavigatorLayout() {
                 backgroundColor: colors.card,
                 borderBottomColor: colors.border,
                 borderBottomWidth: StyleSheet.hairlineWidth,
-                maxHeight: getDefaultHeaderHeight(frame, false, insets.top),
+                maxHeight: defaultHeaderHeight,
               }}
               contentContainerStyle={[
                 styles.breadcrumbs,

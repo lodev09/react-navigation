@@ -16,33 +16,75 @@ fs.readdirSync(path.join(__dirname, '../maestro')).forEach((file) => {
   );
 
   test(metadata.name, async ({ page }) => {
+    const query = (by: string | { text: string } | { id: string }) => {
+      if (typeof by === 'string') {
+        return page.getByText(by);
+      }
+
+      if ('text' in by) {
+        return page.getByText(by.text);
+      }
+
+      if ('id' in by) {
+        return page.getByTestId(by.id);
+      }
+
+      throw new Error(`Unknown step format: ${JSON.stringify(by)}`);
+    };
+
     for (const step of steps) {
-      switch (Object.keys(step)[0]) {
-        case 'openLink': {
-          await page.goto(
-            step.openLink.link.replace('exp://127.0.0.1:8081/--', '')
-          );
-          break;
-        }
+      try {
+        switch (Object.keys(step)[0]) {
+          case 'openLink': {
+            // eslint-disable-next-line no-template-curly-in-string
+            await page.goto(step.openLink.link.replace('${APP_SCHEME}', ''));
 
-        case 'tapOn': {
-          await page
-            .getByText(step.tapOn.text)
-            .locator('visible=true')
-            .first()
-            .click();
-          break;
-        }
+            break;
+          }
 
-        case 'assertVisible': {
-          await expect(
-            page
-              .getByText(step.assertVisible.text)
-              .locator('visible=true')
+          case 'tapOn': {
+            if (step.tapOn.delay) {
+              await new Promise((resolve) => {
+                setTimeout(resolve, step.tapOn.delay);
+              });
+            }
+
+            await query(step.tapOn)
+              .filter({ visible: true })
               .first()
-          ).toBeVisible();
-          break;
+              .click({ force: true });
+
+            break;
+          }
+
+          case 'assertVisible': {
+            await expect(
+              query(step.assertVisible).filter({ visible: true }).first()
+            ).toBeVisible();
+
+            break;
+          }
+
+          case 'extendedWaitUntil': {
+            const element = query(step.extendedWaitUntil.visible)
+              .filter({ visible: true })
+              .first();
+
+            await element.waitFor({
+              timeout: step.extendedWaitUntil.timeout,
+            });
+
+            break;
+          }
+
+          default: {
+            throw new Error(`Unknown command: ${JSON.stringify(step)}`);
+          }
         }
+      } catch (error) {
+        throw new Error(`Failed at step: ${JSON.stringify(step)}`, {
+          cause: error,
+        });
       }
     }
   });

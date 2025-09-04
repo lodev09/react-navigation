@@ -147,20 +147,8 @@ export function useHeaderConfigProps({
         })
       : null;
 
-  const supportsHeaderSearchBar =
-    typeof isSearchBarAvailableForCurrentPlatform === 'boolean'
-      ? isSearchBarAvailableForCurrentPlatform
-      : // Fallback for older versions of react-native-screens
-        Platform.OS === 'ios' && SearchBar != null;
-
   const hasHeaderSearchBar =
-    supportsHeaderSearchBar && headerSearchBarOptions != null;
-
-  if (headerSearchBarOptions != null && !supportsHeaderSearchBar) {
-    throw new Error(
-      `The current version of 'react-native-screens' doesn't support SearchBar in the header. Please update to the latest version to use this option.`
-    );
-  }
+    isSearchBarAvailableForCurrentPlatform && headerSearchBarOptions != null;
 
   /**
    * We need to set this in if:
