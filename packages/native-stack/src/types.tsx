@@ -645,6 +645,13 @@ export type NativeStackNavigationOptions = {
    */
   sheetLargestUndimmedDetentIndex?: number | 'none' | 'last';
   /**
+   * Whether you can interactively dismiss a sheet.
+   * Works only when `stackPresentation` is set to `formSheet`.
+   *
+   * Defaults to `true`.
+   */
+  sheetDismissible?: boolean;
+  /**
    * The display orientation to use for the screen.
    *
    * Supported values:

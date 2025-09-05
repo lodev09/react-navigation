@@ -126,6 +126,7 @@ const SceneView = ({
     sheetElevation = 24,
     sheetExpandsWhenScrolledToEdge = true,
     sheetInitialDetentIndex = 0,
+    sheetDismissible,
     statusBarAnimation,
     statusBarHidden,
     statusBarStyle,
@@ -313,6 +314,7 @@ const SceneView = ({
           sheetLargestUndimmedDetentIndex={sheetLargestUndimmedDetentIndex}
           sheetGrabberVisible={sheetGrabberVisible}
           sheetInitialDetentIndex={sheetInitialDetentIndex}
+          sheetDismissible={sheetDismissible}
           sheetCornerRadius={sheetCornerRadius}
           sheetElevation={sheetElevation}
           sheetExpandsWhenScrolledToEdge={sheetExpandsWhenScrolledToEdge}
